@@ -1,17 +1,21 @@
 package com.example.zjschat.ui.chartlist;
 
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.view.View;
 
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.alibaba.fastjson.JSON;
 import com.example.zjschat.R;
 import com.example.zjschat.base.BaseActivity;
 import com.example.zjschat.entity.ReLa;
 import com.example.zjschat.entity.User;
 import com.example.zjschat.network.MyNetwork;
+import com.example.zjschat.ui.chartdetails.ChatActivity;
 import com.example.zjschat.ui.recyclerViwer.MyRecyclerAdapter;
 
 import java.util.ArrayList;
@@ -39,8 +43,19 @@ public class FriendListActivity extends BaseActivity {
         mRv.setLayoutManager(linearLayoutManager);
         mRv.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
         adapter = new MyRecyclerAdapter(this, mDatas);
+        adapter.setOnItemClickListener(new MyRecyclerAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClicked(View view, int position) {
+                Intent intent = new Intent(FriendListActivity.this, ChatActivity.class);
+                User user = mDatas.get(position);
+                Bundle bundle = new Bundle();
+                bundle.putString("user", JSON.toJSONString(user));
+                intent.putExtras(bundle);
+                System.out.println(user);
+                startActivity(intent);
+            }
+        });
         mRv.setAdapter(adapter);
-
         new MyTask().execute();
     }
 

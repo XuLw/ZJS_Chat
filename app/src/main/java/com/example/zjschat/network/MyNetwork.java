@@ -7,6 +7,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import com.example.zjschat.entity.ReLa;
 import com.example.zjschat.entity.User;
+import com.example.zjschat.ui.chartdetails.ChatActivity;
 import com.example.zjschat.utils.StringUtils;
 import com.zhy.http.okhttp.https.HttpsUtils;
 import com.zhy.http.okhttp.log.LoggerInterceptor;
@@ -20,6 +21,7 @@ import javax.net.ssl.SSLSession;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.WebSocketListener;
 
 public class MyNetwork {
 
@@ -85,5 +87,11 @@ public class MyNetwork {
             return list;
         }
         return null;
+    }
+
+    public static void startSocket(String userId, WebSocketListener listener) {
+        Request request = new Request.Builder().url("ws://192.168.5.10:8080/test/" + userId).build();
+        okHttpClient.newWebSocket(request, listener);
+        okHttpClient.dispatcher().executorService().shutdown();
     }
 }

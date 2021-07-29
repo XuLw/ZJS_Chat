@@ -6,4 +6,7 @@ public class Constants {
     public static final String GET_USER_BY_ID = BASE_URL + "/user/getUser/";
 
     public static final String GET_FIENDS_BY_ID = BASE_URL + "/user/getRela/";
+
+    public static final String SOCKET_CONNECT = "ws://10.0.2.2:8080/websocket/";
+
 }

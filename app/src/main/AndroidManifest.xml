@@ -17,6 +17,7 @@
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
         <activity android:name="com.example.zjschat.ui.chartlist.FriendListActivity"></activity>
+        <activity android:name="com.example.zjschat.ui.chartdetails.ChatActivity"></activity>
         <activity
             android:name="com.example.zjschat.ui.login.LoginActivity"
             android:label="@string/app_name">

@@ -35,7 +35,8 @@ public class LoginActivity extends BaseActivity {
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        User user = MyNetwork.getUserById("1");
+//                        User user = MyNetwork.getUserById("1");
+                        User user = new User("1", "21312");
                         if (user != null) {
 //                            进入消息列表
                             Intent intent = new Intent(LoginActivity.this, FriendListActivity.class);
