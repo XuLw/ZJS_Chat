@@ -14,9 +14,11 @@ import android.widget.Toast;
 
 import com.example.zjschat.R;
 import com.example.zjschat.base.BaseActivity;
+import com.example.zjschat.base.MyApplication;
 import com.example.zjschat.entity.User;
 import com.example.zjschat.network.MyNetwork;
 import com.example.zjschat.ui.chartlist.FriendListActivity;
+import com.example.zjschat.utils.StringUtils;
 
 public class LoginActivity extends BaseActivity {
 
@@ -25,7 +27,7 @@ public class LoginActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        final EditText usernameEditText = findViewById(R.id.username);
+        final EditText userIdET = findViewById(R.id.username);
         final Button loginButton = findViewById(R.id.login);
 
         loginButton.setOnClickListener(new View.OnClickListener() {
@@ -35,16 +37,19 @@ public class LoginActivity extends BaseActivity {
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
-//                        User user = MyNetwork.getUserById("1");
-                        User user = new User("1", "21312");
-                        if (user != null) {
+                        if (!StringUtils.isNull(userIdET.getText().toString())) {
+                            User user = MyNetwork.getUserById(userIdET.getText().toString());
+//                        User user = new User("1", "21312");
+                            if (user != null) {
 //                            进入消息列表
-                            Intent intent = new Intent(LoginActivity.this, FriendListActivity.class);
-                            Bundle bundle = new Bundle();
-                            bundle.putString("id", user.getId());
-                            bundle.putString("username", user.getUsername());
-                            intent.putExtras(bundle);
-                            startActivity(intent);
+                                Intent intent = new Intent(LoginActivity.this, FriendListActivity.class);
+//                            Bundle bundle = new Bundle();
+//                            bundle.putString("id", user.getId());
+//                            bundle.putString("username", user.getUsername());
+//                            intent.putExtras(bundle);
+                                MyApplication.setUser(user);
+                                startActivity(intent);
+                            }
                         }
                     }
                 }).start();

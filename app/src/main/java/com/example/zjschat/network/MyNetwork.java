@@ -4,10 +4,8 @@ import android.util.Log;
 import android.widget.RelativeLayout;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.TypeReference;
 import com.example.zjschat.entity.ReLa;
 import com.example.zjschat.entity.User;
-import com.example.zjschat.ui.chartdetails.ChatActivity;
 import com.example.zjschat.utils.StringUtils;
 import com.zhy.http.okhttp.https.HttpsUtils;
 import com.zhy.http.okhttp.log.LoggerInterceptor;
@@ -24,6 +22,8 @@ import okhttp3.Response;
 import okhttp3.WebSocketListener;
 
 public class MyNetwork {
+
+    public static final String TAG = "MyNetWork";
 
     static HttpsUtils.SSLParams sslParams = HttpsUtils.getSslSocketFactory(null, null, null);
     private static final OkHttpClient okHttpClient = new OkHttpClient.Builder()
@@ -90,7 +90,8 @@ public class MyNetwork {
     }
 
     public static void startSocket(String userId, WebSocketListener listener) {
-        Request request = new Request.Builder().url("ws://192.168.5.10:8080/test/" + userId).build();
+        Request request = new Request.Builder().url(Constants.SOCKET_CONNECT + userId).build();
+        Log.i(TAG, "startSocket: " + request.url());
         okHttpClient.newWebSocket(request, listener);
         okHttpClient.dispatcher().executorService().shutdown();
     }

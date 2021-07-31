@@ -1,6 +1,7 @@
 package com.example.zjschat.ui.chartdetails;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
@@ -13,30 +14,35 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.alibaba.fastjson.JSON;
 import com.example.zjschat.R;
 import com.example.zjschat.base.BaseActivity;
+import com.example.zjschat.base.MyApplication;
 import com.example.zjschat.entity.Record;
 import com.example.zjschat.entity.User;
+import com.example.zjschat.network.MyNetwork;
 import com.example.zjschat.utils.StringUtils;
 
-import java.util.ArrayList;
+import org.jetbrains.annotations.NotNull;
 
-import okhttp3.OkHttpClient;
+import java.util.ArrayList;
+import java.util.Date;
+
 import okhttp3.Response;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 
 public class ChatActivity extends BaseActivity {
 
+    private static final String TAG = "ChatActivity";
 
-    private ArrayList<Record> mUserArrayList = new ArrayList<>();//定义一个存储信息的列表
+    private ArrayList<Record> mMessages = new ArrayList<>();//定义一个存储信息的列表
     private EditText mInputText;//输入框
     private Button mSend;//发送按钮
     private RecyclerView mRecyclerView;//滑动框
-    private UserAdapter mAdapter;//适配器
+    private MessageAdapter mAdapter;//适配器
     private boolean backFlag = false;
     private WebSocket mSocket;
 
-    private User mUser;
-    ;//全局User
+    private User mUser;  // 跟谁聊
+    //全局User
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,35 +56,36 @@ public class ChatActivity extends BaseActivity {
             mUser = JSON.parseObject(s, User.class);
         }
 
-        System.out.println(mUser);
-
-//        if (!data.equals("")) {
-//            mUser = JSON.parseObject(data, User.class);
-//        } else {
-////            mUser = new User("0001","测试名字",R.drawable.boy);
-//        }
+        Log.i(TAG, "当前聊天用户为：" + mUser.toString());
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         mRecyclerView.setLayoutManager(layoutManager);
-        mAdapter = new UserAdapter(mUserArrayList);
+        mAdapter = new MessageAdapter(mMessages);
         mRecyclerView.setAdapter(mAdapter);
 
         //开启连接
 //        start(mUser.getUserId());
-
+        MyNetwork.startSocket(MyApplication.getUser().getId(), new EchoWebSocketListener());
 
         mSend.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 String content = mInputText.getText().toString();
                 if (!"".equals(content)) {
+                    Record record = new Record();
+                    record.setId1(MyApplication.getUser().getId());
+                    record.setId2(mUser.getId());
+                    record.setSend_date(new Date());
 //                    Msg msg = new Msg(true,content,false);
 //                    User tempUser = new User(mUser.getUserId(),mUser.getUserName(),R.drawable.boy,msg);
 //                    mSocket.send(tempUser.toString());
 //                    mUserArrayList.add(tempUser);
-//                    updateRecyclerView();//刷新RecyclerView
-//                    //清空输入栏
-//                    mInputText.setText("");
+                    record.setText(content);
+                    mSocket.send(JSON.toJSONString(record));
+                    mMessages.add(record);
+                    updateRecyclerView();//刷新RecyclerView
+                    //清空输入栏
+                    mInputText.setText("");
                 }
             }
         });
@@ -89,38 +96,20 @@ public class ChatActivity extends BaseActivity {
      */
     private void updateRecyclerView() {
         //当有新消息时，刷新RecyclerView中的显示
-        mAdapter.notifyItemInserted(mUserArrayList.size() - 1);
+        mAdapter.notifyItemInserted(mMessages.size() - 1);
         //将RecyclerView定位到最后一行
-        mRecyclerView.scrollToPosition(mUserArrayList.size() - 1);
+        mRecyclerView.scrollToPosition(mMessages.size() - 1);
     }
 
-//    /**
-//     * 开启web socket连接
-//     * */
-//    private void start(String userId) {
-//
-//        OkHttpClient mOkHttpClient = new OkHttpClient.Builder()
-//                .readTimeout(300, TimeUnit.SECONDS)//设置读取超时时间
-//                .writeTimeout(300, TimeUnit.SECONDS)//设置写的超时时间
-//                .connectTimeout(300, TimeUnit.SECONDS)//设置连接超时时间
-//                .build();
-//
-//        //定义request
-//        Request request = new Request.Builder().url("ws://192.168.5.10:8080/test/"+userId).build();
-//        //绑定回调接口
-//        mOkHttpClient.newWebSocket(request, new EchoWebSocketListener());
-//        mOkHttpClient.dispatcher().executorService().shutdown();
-//
-//    }
 
     /**
      * 显示内容
      */
-    private void output(final User user) {
+    private void output(final Record record) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-//                mUserArrayList.add(user);
+                mMessages.add(record);
                 updateRecyclerView();
             }
         });
@@ -135,14 +124,6 @@ public class ChatActivity extends BaseActivity {
         mRecyclerView = findViewById(R.id.msg_recycler_view);
     }
 
-//    /**
-//     * 静态方法返回一个能启动自己的intent
-//     * */
-//    public static Intent newIntent(Context context,String data){
-//        Intent intent = new Intent(context,ChatActivity.class);
-//        intent.putExtra("data",data);
-//        return intent;
-//    }
 
     /**
      * 对返回键的处理
@@ -154,6 +135,7 @@ public class ChatActivity extends BaseActivity {
             backFlag = true;
             return true;
         } else {
+            mSocket.close(1, "主动关闭！");
             return super.onKeyDown(keyCode, event);
         }
     }
@@ -166,33 +148,36 @@ public class ChatActivity extends BaseActivity {
         @Override
         public void onOpen(WebSocket webSocket, Response response) {
             super.onOpen(webSocket, response);
+            Log.i(TAG, "onOpen: 建立连接");
             mSocket = webSocket;    //实例化web socket
-            User user = new User();
-//            user.setUserMsg(new Msg(false,"连接成功",true));
-            output(user);
+
         }
 
         @Override
         public void onMessage(WebSocket webSocket, String text) {
             super.onMessage(webSocket, text);
-            User user = JSON.parseObject(text, User.class);
-            output(user);
+            Log.d(TAG, "onMessage: " + text);
+            Record record = JSON.parseObject(text, Record.class);
+//            显示信息
+            output(record);
         }
 
         @Override
         public void onClosed(WebSocket webSocket, int code, String reason) {
             super.onClosed(webSocket, code, reason);
-            User user = new User();
+//            User user = new User();
 //            user.setUserMsg(new Msg(false,"关闭连接",true));
-            output(user);
+//            output(user);
+
         }
 
         @Override
         public void onFailure(WebSocket webSocket, Throwable t, Response response) {
             super.onFailure(webSocket, t, response);
-            User user = new User();
+            Log.i(TAG, "onFailure: 连接失败" + response);
+//            User user = new User();
 //            user.setUserMsg(new Msg(false,"连接失败:"+t.getMessage(),true));
-            output(user);
+//            output(user);
         }
     }
 }
