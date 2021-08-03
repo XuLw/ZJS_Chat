@@ -1,19 +1,28 @@
 package com.example.zjschat.ui.chartdetails;
 
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.Surface;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.alibaba.fastjson.JSON;
 import com.example.zjschat.R;
 import com.example.zjschat.base.BaseActivity;
+import com.example.zjschat.base.Config;
 import com.example.zjschat.base.MyApplication;
 import com.example.zjschat.entity.Record;
 import com.example.zjschat.entity.User;
@@ -25,6 +34,10 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.Date;
 
+import im.zego.zegoexpress.ZegoExpressEngine;
+import im.zego.zegoexpress.constants.ZegoScenario;
+import im.zego.zegoexpress.entity.ZegoCanvas;
+import im.zego.zegoexpress.entity.ZegoUser;
 import okhttp3.Response;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
@@ -43,13 +56,15 @@ public class ChatActivity extends BaseActivity {
 
     private User mUser;  // 跟谁聊
     //全局User
+    private ZegoExpressEngine engine;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
         initView();
-
+        requestPermission();
         Bundle bundle = getIntent().getExtras();
         String s = bundle.getString("user");
         if (!StringUtils.isNull(s)) {
@@ -57,7 +72,6 @@ public class ChatActivity extends BaseActivity {
         }
 
         Log.i(TAG, "当前聊天用户为：" + mUser.toString());
-
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         mRecyclerView.setLayoutManager(layoutManager);
         mAdapter = new MessageAdapter(mMessages);
@@ -89,6 +103,59 @@ public class ChatActivity extends BaseActivity {
                 }
             }
         });
+    }
+
+    /**
+     * 添加菜单
+     *
+     * @param menu
+     * @return
+     */
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu_voice_video, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_voice:
+                Toast.makeText(ChatActivity.this, "开始语音", Toast.LENGTH_SHORT).show();
+                engine = ZegoExpressEngine.createEngine(Config.APP_ID, Config.APP_SIGN, true, ZegoScenario.GENERAL, getApplication(), null);
+                ZegoUser user = new ZegoUser("user" + MyApplication.getUser().getId());
+                engine.loginRoom("0002", user);
+//                engine.startPublishingStream("web-1627971618022");
+//                engine.startPlayingStream("stream1");
+                engine.startPreview(new ZegoCanvas(findViewById(R.id.voice_call_container)));
+
+                break;
+            case R.id.action_video:
+                Toast.makeText(ChatActivity.this, "开始视频", Toast.LENGTH_SHORT).show();
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    /**
+     * 进行权限申请
+     *
+     * @return
+     */
+    public boolean requestPermission() {
+
+        String[] permissionNeeded = {
+                "android.permission.CAMERA",
+                "android.permission.RECORD_AUDIO"};
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (ContextCompat.checkSelfPermission(this, "android.permission.CAMERA") != PackageManager.PERMISSION_GRANTED ||
+                    ContextCompat.checkSelfPermission(this, "android.permission.RECORD_AUDIO") != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(permissionNeeded, 101);
+            }
+        }
+        return true;
     }
 
     /**
